@@ -31,7 +31,6 @@ public class SwiftCunningDocumentScannerPlugin: NSObject, FlutterPlugin, VNDocum
         }
   }
 
-
     func getDocumentsDirectory() -> URL {
         let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
         let documentsDirectory = paths[0]
@@ -45,15 +44,21 @@ public class SwiftCunningDocumentScannerPlugin: NSObject, FlutterPlugin, VNDocum
         df.dateFormat = "yyyyMMdd-HHmmss"
         let formattedDate = df.string(from: currentDateTime)
         var filenames: [String] = []
-        // Limiter le nombre de pages à 1
+
+        // Limiter le nombre de pages à 1 et fermer le scanner après le premier scan
         if scan.pageCount > 0 {
             let page = scan.imageOfPage(at: 0)
             let url = tempDirPath.appendingPathComponent(formattedDate + "-0.png")
             try? page.pngData()?.write(to: url)
             filenames.append(url.path)
+            
+            // Fermer le scanner après le premier scan
+            resultChannel?(filenames)
+            presentingController?.dismiss(animated: true)
+        } else {
+            resultChannel?(FlutterError(code: "NO_PAGES", message: "No pages were scanned", details: nil))
+            presentingController?.dismiss(animated: true)
         }
-        resultChannel?(filenames)
-        presentingController?.dismiss(animated: true)
     }
 
     public func documentCameraViewControllerDidCancel(_ controller: VNDocumentCameraViewController) {
